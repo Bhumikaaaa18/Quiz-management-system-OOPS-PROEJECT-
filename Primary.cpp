@@ -1,105 +1,84 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
 using namespace std;
-
-// ------------------ INLINE FUNCTION ------------------
 inline void line() { cout << "\n--------------------------------------\n"; }
-
-// ------------------ CONSTANT MEMBER ------------------
 const int MAX_Q = 10;
-
-// ------------------ CLASS DECLARATION ------------------
 class Question {
 private:
     string question;
     string options[4];
     int correctOption;
-
 public:
-    Question() {}
+    Question() {
+        question = "";
+        correctOption = 1;
+    }
     Question(string q, string opt[], int correct) {
         question = q;
         for (int i = 0; i < 4; i++)
             options[i] = opt[i];
         correctOption = correct;
     }
-
     void displayQuestion() const {
         cout << question << endl;
         for (int i = 0; i < 4; i++)
             cout << i + 1 << ". " << options[i] << endl;
     }
-
     bool checkAnswer(int ans) const {
         return ans == correctOption;
     }
-
     friend class FileManager;
 };
-
-// ------------------ FILE HANDLING CLASS ------------------
 class FileManager {
 public:
     static void saveQuestion(const Question &q) {
         ofstream fout("quiz.txt", ios::app);
         if (!fout)
             throw runtime_error("File Error!");
-
         fout << q.question << endl;
         for (int i = 0; i < 4; i++)
             fout << q.options[i] << endl;
         fout << q.correctOption << endl;
         fout.close();
     }
-
-    static vector<Question> loadQuestions() {
+    static int loadQuestions(Question qList[]) {
         ifstream fin("quiz.txt");
         if (!fin)
             throw runtime_error("Quiz file not found!");
-
-        vector<Question> qList;
+        int count = 0;
         string qtext, opt[4];
         int correct;
-
-        while (getline(fin, qtext)) {
+        while (getline(fin, qtext) && count < MAX_Q) {
             for (int i = 0; i < 4; i++) {
-                if (!getline(fin, opt[i])) return qList;
+                if (!getline(fin, opt[i])) return count;
             }
             if (!(fin >> correct)) break;
             fin.ignore();
-            qList.push_back(Question(qtext, opt, correct));
+            qList[count] = Question(qtext, opt, correct);
+            count++;
         }
         fin.close();
-        return qList;
+        return count;
     }
 };
-
-// ------------------ ABSTRACT CLASS (BASE CLASS) ------------------
 class User {
 protected:
     string name;
-
 public:
     User(string n = "Guest") : name(n) {}
     virtual void menu() = 0; // pure virtual
     virtual void role() { cout << "I am a generic user.\n"; }
-    virtual ~User() {} // virtual destructor
+    virtual ~User() {}
 };
-
-// ------------------ ADMIN CLASS (VIRTUAL INHERITANCE) ------------------
 class Admin : virtual public User {
 public:
     Admin(string n) : User(n) {}
-
     void role() override { cout << "I am Admin.\n"; }
-
     void addQuestion() {
         string q;
         string opt[4];
         int correct;
-
         cin.ignore();
         cout << "Enter question: ";
         getline(cin, q);
@@ -109,16 +88,14 @@ public:
         }
         cout << "Enter correct option number: ";
         cin >> correct;
-
         Question newQ(q, opt, correct);
         try {
             FileManager::saveQuestion(newQ);
-            cout << "✅ Question added successfully!\n";
+            cout << "Question added successfully.\n";
         } catch (exception &e) {
             cout << "Error: " << e.what() << endl;
         }
     }
-
     void menu() override {
         int ch;
         do {
@@ -130,35 +107,30 @@ public:
         } while (ch != 2);
     }
 };
-
-// ------------------ PLAYER CLASS (VIRTUAL INHERITANCE) ------------------
 class Player : virtual public User {
 private:
     int score;
-
 public:
     Player(string n) : User(n), score(0) {}
-
     void role() override { cout << "I am Player.\n"; }
-
     void startQuiz() {
         try {
-            vector<Question> qList = FileManager::loadQuestions();
+            Question qList[MAX_Q];
+            int total = FileManager::loadQuestions(qList);
             int ans;
-            for (auto &q : qList) {
+            for (int i = 0; i < total; i++) {
                 line();
-                q.displayQuestion();
+                qList[i].displayQuestion();
                 cout << "Enter your answer: ";
                 cin >> ans;
-                if (q.checkAnswer(ans))
+                if (qList[i].checkAnswer(ans))
                     score++;
             }
-            cout << "🎯 Your score: " << score << "/" << qList.size() << endl;
+            cout << "Your score: " << score << "/" << total << endl;
         } catch (exception &e) {
             cout << "Error: " << e.what() << endl;
         }
     }
-
     void menu() override {
         int ch;
         do {
@@ -170,8 +142,6 @@ public:
         } while (ch != 2);
     }
 };
-
-// ------------------ MULTIPLE INHERITANCE FIXED ------------------
 class RegisteredUser : public Admin, public Player {
 public:
     RegisteredUser(string n) : User(n), Admin(n), Player(n) {}
@@ -186,8 +156,6 @@ public:
         cout << "I am a Registered User (Admin + Player).\n";
     }
 };
-
-// ------------------ OPERATOR OVERLOADING ------------------
 class Score {
     int value;
 
@@ -196,8 +164,6 @@ public:
     Score operator+(Score s) { return Score(value + s.value); }
     void display() { cout << "Total Score: " << value << endl; }
 };
-
-// ------------------ TEMPLATE CLASS ------------------
 template <class T>
 class Result {
     T data;
@@ -206,8 +172,6 @@ public:
     Result(T d) : data(d) {}
     void showResult() { cout << "Final Result: " << data << endl; }
 };
-
-// ------------------ STATIC MEMBER EXAMPLE ------------------
 class Counter {
     static int count;
 
@@ -216,11 +180,9 @@ public:
     static void showCount() { cout << "Objects created: " << count << endl; }
 };
 int Counter::count = 0;
-
-// ------------------ MAIN FUNCTION ------------------
 int main() {
     line();
-    cout << "🧠 QUIZ MANAGEMENT SYSTEM (OOPs Project)\n";
+    cout << "QUIZ MANAGEMENT SYSTEM (OOP Project)\n";
     line();
 
     string name;
@@ -231,7 +193,7 @@ int main() {
     cout << "1. Admin\n2. Player\n3. Registered User\nEnter your role: ";
     cin >> role;
 
-    User *u = nullptr; // Dynamic binding (Polymorphism)
+    User *u = nullptr;
 
     if (role == 1)
         u = new Admin(name);
@@ -243,12 +205,8 @@ int main() {
         cout << "Invalid choice!\n";
         return 0;
     }
-
     u->role();
     u->menu();
-
-    // ------------------ DEMO OF OTHER CONCEPTS ------------------
-    line();
     cout << "Demonstrating Other OOP Concepts:\n";
 
     Score s1(5), s2(10);
@@ -261,8 +219,8 @@ int main() {
     Counter c1, c2, c3;
     Counter::showCount();
 
-    delete u; // dynamic memory deallocation
+    delete u;
     line();
-    cout << "✅ Program Ended Successfully!\n";
+    cout << "Program Ended Successfully.\n";
     return 0;
 }
