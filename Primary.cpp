@@ -207,7 +207,7 @@ int main() {
     }
     u->role();
     u->menu();
-    cout << "Demonstrating Other OOP Concepts:\n";
+    
 
     Score s1(5), s2(10);
     Score total = s1 + s2;
